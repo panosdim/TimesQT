@@ -33,7 +33,7 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>Times.ico</normaloff>Times.ico</iconset>
+    <normaloff>Times.png</normaloff>Times.png</iconset>
   </property>
   <widget class="QWidget" name="centralWidget">
    <widget class="QCalendarWidget" name="calendar">
