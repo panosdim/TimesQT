@@ -24,6 +24,8 @@ private slots:
 
     void updateTotal(QString date);
 
+    void on_deleteButton_clicked();
+
 private:
     Ui::MainWindow *ui;
 };

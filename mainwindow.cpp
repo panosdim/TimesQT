@@ -4,7 +4,6 @@
 #include <QSqlError>
 #include <QSqlRecord>
 #include <QFile>
-#include <QDebug>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
@@ -22,6 +21,7 @@ MainWindow::MainWindow(QWidget *parent) :
     } else {
         ui->statusBar->showMessage("Could not open database file Times.sqlite");
         ui->saveButton->setEnabled(false);
+        ui->deleteButton->setEnabled(false);
     }
 
     // Update Calendar
@@ -78,17 +78,29 @@ void MainWindow::updateTotal(QString date) {
         if (query.next()) {
             QTime totDelay = QTime::fromString(query.value(0).toString());
             QTime totOvertime = QTime::fromString(query.value(1).toString());
-            QPalette  pal;
-            if (totDelay > totOvertime) {
-                pal.setColor (QPalette::Background, Qt::red);
+            QTime totDiff = QTime(0,0).addSecs(abs(totDelay.secsTo(totOvertime)));
+
+            if (totDelay.isNull()) {
+                ui->totDelay->setText("00:00");
             } else {
-                pal.setColor (QPalette::Background, Qt::green);
+                ui->totDelay->setText(totDelay.toString("hh:mm"));
+            }
+            if (totOvertime.isNull()) {
+                ui->totOvertime->setText("00:00");
+            } else {
+                ui->totOvertime->setText(totOvertime.toString("hh:mm"));
             }
 
-            ui->totDiffEdit->setPalette(pal);
-            ui->totDiffEdit->setTime(QTime(0,0).addSecs(abs(totDelay.secsTo(totOvertime))));
-            ui->totDelayEdit->setTime(totDelay);
-            ui->totOvertimeEdit->setTime(totOvertime);
+            if (totDelay > totOvertime) {
+                ui->totDiff->setStyleSheet("color: red;");
+            } else {
+                ui->totDiff->setStyleSheet("color: green;");
+            }
+            if (totDiff.isNull()) {
+                ui->totDiff->setText("00:00");
+            } else {
+                ui->totDiff->setText(totDiff.toString("hh:mm"));
+            }
         }
     }
 }
@@ -207,4 +219,33 @@ void MainWindow::on_calendar_currentPageChanged(int year, int month)
 
     // Update Total section
     updateTotal(start.toString("yyyy-MM-dd"));
+}
+
+void MainWindow::on_deleteButton_clicked()
+{
+    // Variables
+    QDate date = ui->calendar->selectedDate();
+    QBrush brush;
+    QSqlQuery query;
+
+    // Update Calendar Widget
+    brush.setColor( Qt::white );
+    QTextCharFormat cf = ui->calendar->dateTextFormat( date );
+    cf.setBackground( brush );
+    ui->calendar->setDateTextFormat( date, cf );
+
+    // Remove record from database
+    query.prepare("DELETE FROM movements WHERE date=:date");
+    query.bindValue(":date", date.toString("yyyy-MM-dd"));
+    if (query.exec())
+    {
+        ui->statusBar->showMessage("Movements deleted successfully in database");
+    }
+
+    // Update Total section
+    updateTotal(date.toString("yyyy-MM-dd"));
+
+    // Clear textEdit
+    ui->delayEdit->setTime(QTime(0,0));
+    ui->overtimeEdit->setTime(QTime(0,0));
 }
